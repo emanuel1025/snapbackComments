@@ -1,3 +1,4 @@
+from __future__ import division
 import random
 import pprint
 import string
@@ -80,20 +81,38 @@ class subredditMaster:
 		titlePost = soup.text.replace("\n\t", " ").replace("\n", " ").replace("\t", " ")
 		urlPost = 'reddit.com' + comment.permalink + '?context=10000'
 
-		self.subredditData.submit(titlePost, urlPost)
+		if len(titlePost) > 300:
+			titlePost = titlePost[:297] + '...'
+
+		self.toPostSubreddit.submit(titlePost, url=urlPost)
 		self.addDbEntry(self.name, comment.id)
 
     def dbCacheEntry(self, subredditName, commentId):
 		try:
-			if (document[subredditName][commentId]):
+			if (postedCommentsCache[subredditName][commentId]):
 				return True
 		except:
 			return False
 
     def postComments(self, commentsToPost):
+		realToPost = []
 		for commentId, commentData in commentsToPost.iteritems():
 			if not self.dbCacheEntry(self.name, commentId):
+				realToPost.append(commentData)
+
+		# sorting
+		realToPost.sort(key=lambda post:post.scorePolarity, reverse=True)
+		realToPost = realToPost[:10]
+
+		creators = {};
+
+		for commentData in realToPost:
+			try:
+				creators[commentData.author]
+			except:
 				self.postReddit(commentData)
+				creators[commentData.author] = True
+
 
     def parseComments(self, commentsList, submissionId, submissionScore):
     	tempCommentsObj = {}
@@ -104,13 +123,15 @@ class subredditMaster:
     	for comment in commentsList:
     		parentId = regex.match(comment.parent_id).group(2)
     		try:
-    			if comment.score > 10 and tempCommentsObj[parentId].score >= 0 and tempCommentsObj[parentId].score*2 < comment.score:
+    			if comment.score > 20 and tempCommentsObj[parentId].score >= 10 and tempCommentsObj[parentId].score*2 < comment.score:
     				if comment.id not in self.commentsToPost:
+    					comment.scorePolarity = comment.score/tempCommentsObj[parentId].score
     					self.commentsToPost[comment.id] = comment
     		except:
 				if submissionId in parentId:
-					if comment.score > 10 and submissionScore >= 0 and submissionScore*2 < comment.score:
+					if comment.score > 20 and submissionScore >= 10 and submissionScore*2 < comment.score:
 						if comment.id not in self.commentsToPost:
+							comment.scorePolarity = comment.score/submissionScore
 							self.commentsToPost[comment.id] = comment
 
     def parsePosts(self, postsDict):
@@ -129,6 +150,7 @@ class subredditMaster:
 
     def getSubredditData(self):
     	self.subredditData = self.prawInit.subreddit(self.name)
+    	self.toPostSubreddit = self.prawInit.subreddit('snapbackComments')
     	for submission in self.subredditData.hot():
     		self.postsToParse[submission.id] = False
     	self.parsePosts(self.postsToParse)
