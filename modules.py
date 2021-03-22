@@ -12,8 +12,8 @@ from bs4 import BeautifulSoup
 from pymongo import MongoClient
 
 userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36"
-client_id = "XfLj8EkdiapGIg"
-client_secret = "Sn2OGpkkWG_IlPCpM9E3hX46K-k"
+client_id = "xx"
+client_secret = "yy"
 
 dbClient = MongoClient()
 db = dbClient.snapbackComments
@@ -30,7 +30,7 @@ regex = re.compile(r"(t[0-9]_)?(.+)")
 def getRandomString(N=16):
 	return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
 
-def parseThisShit(subreddits):
+def parseSubreddits(subreddits):
 	for subreddit in subreddits:
 		try:
 			passkeys[subreddit + 'GC_bot']
@@ -179,5 +179,5 @@ if ('--parseSubs' in args):
 initCache()
 
 if len(subsToParse) > 0:
-	parseThisShit(subsToParse)
+	parseSubreddits(subsToParse)
 
